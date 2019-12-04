@@ -14,11 +14,24 @@ function logger(req, res, next) {
   next(); //allows the res to continue to the next middleware or route handler
 };
 
-function gatekeeper(req, res, next) {
-  const passwordInsert = (req.password) ? ` ${req.password}` : 'mellon';
+function gateKeeper(req, res, next) {
+  const password = req.headers.password;
+  if (password && password.toLowerCase() === "mellon") {
+    next();
+  } else {
+    res.status(401).json({ you: "shall not pass!!" });
+  }
+}
 
-
-
+//checkRole('admin'), checkRole('agents')
+function checkRole(role) {
+  return function (req, res, next) {
+    if (role && role === req.headers.role) {
+      next();
+    } else {
+      res.status(403).json({ message: "can't touch this!" })
+    }
+  };
 }
 
 //write a gatekeeper middleware that reads a password from the headers and if the password is 'mellon', let it continue
@@ -45,8 +58,10 @@ server.get('/echo', (req, res) => {
 });
 
 //local 
-server.get('/area51', helmet(), (req, res) => {
+server.get('/area51', gateKeeper, checkRole('agent'), (req, res) => {
   res.send(req.headers);
 });
 
 module.exports = server;
+
+
